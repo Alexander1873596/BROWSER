@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build Android APK (no gradlew)
 
 on:
   push:
@@ -21,46 +21,44 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Find Gradle Wrapper (gradlew)
-        id: find_gradlew
+      # Ставим Gradle на runner (wrapper не нужен)
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.2.2"
+
+      # Находим папку Android-проекта по settings.gradle
+      - name: Find Android project dir
+        id: find_project
         shell: bash
         run: |
           set -e
-          GRADLEW_PATH="$(find . -type f -name gradlew -print -quit)"
-          if [ -z "$GRADLEW_PATH" ]; then
-            echo "ERROR: gradlew not found in repository."
-            echo "Make sure you uploaded the Android Studio project including gradlew, gradlew.bat, and gradle/wrapper."
+          PROJECT_DIR="$(find . -maxdepth 6 -type f -name settings.gradle -print -quit | xargs -r dirname)"
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "ERROR: settings.gradle not found. Upload the Android project folder (with settings.gradle and app/)."
             exit 1
           fi
-          echo "Found gradlew at: $GRADLEW_PATH"
-          echo "gradlew_path=$GRADLEW_PATH" >> "$GITHUB_OUTPUT"
-          echo "gradle_dir=$(dirname "$GRADLEW_PATH")" >> "$GITHUB_OUTPUT"
-
-      - name: Make gradlew executable
-        shell: bash
-        run: |
-          chmod +x "${{ steps.find_gradlew.outputs.gradlew_path }}"
+          echo "project_dir=$PROJECT_DIR" >> "$GITHUB_OUTPUT"
+          echo "Found project dir: $PROJECT_DIR"
 
       - name: Build debug APK
         shell: bash
         run: |
           set -e
-          cd "${{ steps.find_gradlew.outputs.gradle_dir }}"
-          ./gradlew :app:assembleDebug --no-daemon
+          gradle -p "${{ steps.find_project.outputs.project_dir }}" :app:assembleDebug --no-daemon
 
       - name: Find APK
         id: find_apk
         shell: bash
         run: |
           set -e
-          APK_PATH="$(find . -type f -path "*/app/build/outputs/apk/debug/app-debug.apk" -print -quit)"
+          APK_PATH="$(find "${{ steps.find_project.outputs.project_dir }}" -type f -path "*/app/build/outputs/apk/debug/app-debug.apk" -print -quit)"
           if [ -z "$APK_PATH" ]; then
             echo "ERROR: app-debug.apk not found after build."
-            echo "Searched for */app/build/outputs/apk/debug/app-debug.apk"
             exit 1
           fi
-          echo "Found APK at: $APK_PATH"
           echo "apk_path=$APK_PATH" >> "$GITHUB_OUTPUT"
+          echo "Found APK: $APK_PATH"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
