@@ -1,4 +1,4 @@
-name: Build Android APK (no gradlew, compatible)
+name: Build Android APK (no gradlew)
 
 on:
   push:
@@ -21,15 +21,16 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Gradle 7.6
+      # Ставим Gradle 8.2 (подходит под "minimum 8.2")
+      - name: Install Gradle 8.2
         shell: bash
         run: |
           set -e
           sudo apt-get update
           sudo apt-get install -y wget unzip
-          wget -q https://services.gradle.org/distributions/gradle-7.6-bin.zip
-          unzip -q gradle-7.6-bin.zip
-          echo "$PWD/gradle-7.6/bin" >> $GITHUB_PATH
+          wget -q https://services.gradle.org/distributions/gradle-8.2-bin.zip
+          unzip -q gradle-8.2-bin.zip
+          echo "$PWD/gradle-8.2/bin" >> $GITHUB_PATH
           gradle -v
 
       - name: Find Android project dir
