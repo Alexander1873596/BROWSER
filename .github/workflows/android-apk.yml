@@ -21,11 +21,9 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      # Ставим Gradle на runner (wrapper не нужен)
+      # Ставим Gradle (без указания версии — так точно работает)
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.2.2"
 
       # Находим папку Android-проекта по settings.gradle
       - name: Find Android project dir
